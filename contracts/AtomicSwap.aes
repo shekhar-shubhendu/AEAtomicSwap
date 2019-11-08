@@ -33,10 +33,22 @@ payable contract AtomicSwap =
     Chain.event(Participated2(state.swaps[hashedSecret].initiator, state.swaps[hashedSecret].participant, state.swaps[hashedSecret].hashedSecret))
   
   stateful entrypoint redeem(secret: bytes(32), hashedSecret: bytes(32)) =
-    Chain.spend(state.swaps[hashedSecret].participant, state.swaps[hashedSecret].value)
+    let receiver =
+      switch(state.swaps[hashedSecret].state)
+        Initiator => state.swaps[hashedSecret].participant
+        Participant => state.swaps[hashedSecret].initiator
+    
+    put(state{swaps[hashedSecret].emptied = true})
+    Chain.spend(receiver, state.swaps[hashedSecret].value)
     Chain.event(Redeemed(Chain.timestamp))
   
   stateful entrypoint refund(hashedSecret: bytes(32)) =
-    Chain.spend(state.swaps[hashedSecret].initiator, state.swaps[hashedSecret].value)
+    let receiver =
+      switch(state.swaps[hashedSecret].state)
+        Initiator => state.swaps[hashedSecret].initiator
+        Participant => state.swaps[hashedSecret].participant
+    
+    put(state{swaps[hashedSecret].emptied = true})
+    Chain.spend(receiver, state.swaps[hashedSecret].value)
     Chain.event(Refunded(Chain.timestamp))
   
