@@ -41,16 +41,31 @@ payable contract AtomicSwap =
       switch(state.swaps[hashedSecret].state)
         Initiator => state.swaps[hashedSecret].participant
         Participant => state.swaps[hashedSecret].initiator
-    put(state{swaps[hashedSecret].emptied = true})
-    Chain.spend(receiver, state.swaps[hashedSecret].value)
-    Chain.event(Redeemed(Chain.timestamp))
+    if (receiver == Call.caller)
+      if (state.swaps[hashedSecret].emptied == false)
+        if(hashedSecret == Crypto.sha3(secret))
+          put(state{swaps[hashedSecret].emptied = true})
+          Chain.spend(receiver, state.swaps[hashedSecret].value)
+          Chain.event(Redeemed(Chain.timestamp))
+        else
+          abort("Invalid Secret")
+      else
+        abort("Nothing to redeem")
+    else
+      abort("Unauthorized")
   
   stateful entrypoint refund(hashedSecret: bytes(32)) =
     let receiver =
       switch(state.swaps[hashedSecret].state)
         Initiator => state.swaps[hashedSecret].initiator
         Participant => state.swaps[hashedSecret].participant
-    put(state{swaps[hashedSecret].emptied = true})
-    Chain.spend(receiver, state.swaps[hashedSecret].value)
-    Chain.event(Refunded(Chain.timestamp))
+    if (receiver == Call.caller)
+      if (state.swaps[hashedSecret].emptied == false)
+        put(state{swaps[hashedSecret].emptied = true})
+        Chain.spend(receiver, state.swaps[hashedSecret].value)
+        Chain.event(Refunded(Chain.timestamp))
+      else
+        abort("Nothing to redeem")
+    else
+      abort("Unauthorized")
   
