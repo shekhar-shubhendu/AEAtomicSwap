@@ -42,6 +42,7 @@ payable contract AtomicSwap =
         Initiator => state.swaps[hashedSecret].participant
         Participant => state.swaps[hashedSecret].initiator
     require(receiver == Call.caller, "Unauthorized")
+    require(Chain.timestamp < state.swaps[hashedSecret].inittimestamp + state.swaps[hashedSecret].refundTime, "Swap Expired")
     require(state.swaps[hashedSecret].emptied == false, "Nothing to redeem")
     require(hashedSecret == Crypto.sha3(secret), "Invalid Secret")
     put(state{swaps[hashedSecret].emptied = true})
@@ -55,6 +56,7 @@ payable contract AtomicSwap =
         Initiator => state.swaps[hashedSecret].initiator
         Participant => state.swaps[hashedSecret].participant
     require(receiver == Call.caller, "Unauthorized")
+    require(Chain.timestamp > state.swaps[hashedSecret].inittimestamp + state.swaps[hashedSecret].refundTime, "Refund can not be initiated during swap window")
     require(state.swaps[hashedSecret].emptied == false, "Nothing to redeem")
     put(state{swaps[hashedSecret].emptied = true})
     Chain.spend(receiver, state.swaps[hashedSecret].value)
