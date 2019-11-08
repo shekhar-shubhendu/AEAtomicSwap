@@ -3,8 +3,8 @@
 payable contract AtomicSwap =
   datatype swapState = Empty | Initiator | Participant
   record swap = {inittimestamp: int, refundTime: int, hashedSecret: bytes(20), initiator: address, participant: address, value: int, emptied: bool, state: swapState}
-  record state = { swaps: map(bytes(20), swap), owner: address}
-  stateful entrypoint init(_owner: address) = {owner = _owner, swaps = {}}
+  record state = { swaps: map(bytes(20), swap)}
+  stateful entrypoint init() = {swaps = {}}
   payable stateful entrypoint initiate(refundTime : int, hashedSecret: bytes(20), participant: address) = (refundTime, hashedSecret, participant)
   stateful entrypoint participate(refundTime : int, hashedSecret: bytes(20), initiator: address) = (refundTime, hashedSecret, initiator)
   stateful entrypoint redeem(secret: bytes(32), hashedSecret: bytes(20)) = (secret, hashedSecret)
