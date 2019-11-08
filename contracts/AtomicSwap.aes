@@ -45,6 +45,7 @@ payable contract AtomicSwap =
       if (state.swaps[hashedSecret].emptied == false)
         if(hashedSecret == Crypto.sha3(secret))
           put(state{swaps[hashedSecret].emptied = true})
+          put(state{swaps[hashedSecret].secret = secret})
           Chain.spend(receiver, state.swaps[hashedSecret].value)
           Chain.event(Redeemed(Chain.timestamp))
         else
