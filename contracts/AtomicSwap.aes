@@ -19,7 +19,9 @@ payable contract AtomicSwap =
   stateful entrypoint init() = {swaps = {}}
   
   payable stateful entrypoint initiate(refundTime : int, hashedSecret: bytes(32), participant: address) =
-    put(state{swaps[hashedSecret] = create_swap(refundTime, hashedSecret, participant, Call.caller, Initiator)})
+    switch(Map.lookup(hashedSecret, state.swaps))
+      None => put(state{swaps[hashedSecret] = create_swap(refundTime, hashedSecret, participant, Call.caller, Initiator)})
+      Some(n) => abort("Entry already present")
     Chain.event(Initiated1(state.swaps[hashedSecret].initiator, state.swaps[hashedSecret].participant, state.swaps[hashedSecret].value))
     Chain.event(Initiated2(state.swaps[hashedSecret].initiator, state.swaps[hashedSecret].participant, state.swaps[hashedSecret].hashedSecret))
     Chain.event(Initiated3(state.swaps[hashedSecret].initiator, state.swaps[hashedSecret].participant, state.swaps[hashedSecret].refundTime))
@@ -28,7 +30,9 @@ payable contract AtomicSwap =
     {inittimestamp = Chain.timestamp, refundTime = refundTime, hashedSecret = hashedSecret, secret = Crypto.sha3(0), initiator = initiator, participant = participant, value = Call.value, emptied = false, state = creator}
   
   stateful entrypoint participate(refundTime : int, hashedSecret: bytes(32), initiator: address) =
-    put(state{swaps[hashedSecret] = create_swap(refundTime, hashedSecret, Call.caller, initiator,Participant)})
+    switch(Map.lookup(hashedSecret, state.swaps))
+      None => put(state{swaps[hashedSecret] = create_swap(refundTime, hashedSecret, Call.caller, initiator,Participant)})
+      Some(n) => abort("Entry already present")
     Chain.event(Participated1(state.swaps[hashedSecret].initiator, state.swaps[hashedSecret].participant, state.swaps[hashedSecret].value))
     Chain.event(Participated2(state.swaps[hashedSecret].initiator, state.swaps[hashedSecret].participant, state.swaps[hashedSecret].hashedSecret))
   
@@ -37,7 +41,6 @@ payable contract AtomicSwap =
       switch(state.swaps[hashedSecret].state)
         Initiator => state.swaps[hashedSecret].participant
         Participant => state.swaps[hashedSecret].initiator
-    
     put(state{swaps[hashedSecret].emptied = true})
     Chain.spend(receiver, state.swaps[hashedSecret].value)
     Chain.event(Redeemed(Chain.timestamp))
@@ -47,7 +50,6 @@ payable contract AtomicSwap =
       switch(state.swaps[hashedSecret].state)
         Initiator => state.swaps[hashedSecret].initiator
         Participant => state.swaps[hashedSecret].participant
-    
     put(state{swaps[hashedSecret].emptied = true})
     Chain.spend(receiver, state.swaps[hashedSecret].value)
     Chain.event(Refunded(Chain.timestamp))
