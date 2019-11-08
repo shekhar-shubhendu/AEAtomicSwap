@@ -1,0 +1,6 @@
+@compiler >= 4
+contract AtomicSwap =
+  entrypoint initiate(refundTime : int, hashedSecret: bytes(20), participant: address) = (refundTime, hashedSecret, participant)
+  entrypoint participate(refundTime : int, hashedSecret: bytes(20), initiator: address) = (refundTime, hashedSecret, initiator)
+  entrypoint redeem(secret: bytes(32), hashedSecret: bytes(20)) = (secret, hashedSecret)
+  entrypoint refund(hashedSecret: bytes(20)) = (hashedSecret)
